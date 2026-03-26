@@ -115,13 +115,76 @@ public class BillingService {
             Medicine med = item.getMedicine();
             if (med != null) {
                 int currentQty = med.getQuantity() != null ? med.getQuantity() : 0;
-                med.setQuantity(currentQty + item.getQuantity());
-                medicineRepository.save(med);
+                int remainingToReturn = item.getQuantity() - item.getReturnedQuantity();
+                if (remainingToReturn > 0) {
+                    med.setQuantity(currentQty + remainingToReturn);
+                    medicineRepository.save(med);
+                    item.setReturnedQuantity(item.getQuantity()); // Mark as fully returned
+                }
             }
         }
 
         invoice.setReturned(true);
+        recalculateInvoiceTotals(invoice);
         return invoiceRepository.save(invoice);
+    }
+
+    @Transactional
+    public Invoice processPartialReturn(com.pharmacy.pharmacy_system.dto.PartialReturnRequestDTO request) {
+        Invoice invoice = invoiceRepository.findByInvoiceNumber(request.getInvoiceNumber())
+                .orElseThrow(() -> new RuntimeException("Invoice not found: " + request.getInvoiceNumber()));
+
+        if (invoice.isReturned()) {
+            throw new RuntimeException("Invoice is already fully returned.");
+        }
+
+        for (com.pharmacy.pharmacy_system.dto.PartialReturnRequestDTO.ReturnItemDTO returnReq : request.getReturnItems()) {
+            InvoiceItem item = invoice.getItems().stream()
+                    .filter(i -> i.getId().equals(returnReq.getItemId()))
+                    .findFirst()
+                    .orElseThrow(() -> new RuntimeException("Item not found in invoice: " + returnReq.getItemId()));
+
+            int alreadyReturned = item.getReturnedQuantity() != null ? item.getReturnedQuantity() : 0;
+            int availableToReturn = item.getQuantity() - alreadyReturned;
+
+            if (returnReq.getReturnQuantity() > availableToReturn) {
+                throw new RuntimeException("Cannot return more than available quantity for " + item.getMedicine().getBrandName());
+            }
+
+            // Restore stock
+            Medicine med = item.getMedicine();
+            int currentStock = med.getQuantity() != null ? med.getQuantity() : 0;
+            med.setQuantity(currentStock + returnReq.getReturnQuantity());
+            medicineRepository.save(med);
+
+            // Update item returned quantity
+            item.setReturnedQuantity(alreadyReturned + returnReq.getReturnQuantity());
+        }
+
+        // Check if now fully returned
+        boolean allReturned = invoice.getItems().stream()
+                .allMatch(item -> item.getReturnedQuantity().equals(item.getQuantity()));
+        if (allReturned) {
+            invoice.setReturned(true);
+        }
+
+        recalculateInvoiceTotals(invoice);
+        return invoiceRepository.save(invoice);
+    }
+
+    private void recalculateInvoiceTotals(Invoice invoice) {
+        BigDecimal newSubtotal = BigDecimal.ZERO;
+        for (InvoiceItem item : invoice.getItems()) {
+            int effectiveQty = item.getQuantity() - (item.getReturnedQuantity() != null ? item.getReturnedQuantity() : 0);
+            if (effectiveQty > 0) {
+                BigDecimal itemTotal = item.getPrice().multiply(BigDecimal.valueOf(effectiveQty));
+                newSubtotal = newSubtotal.add(itemTotal);
+            }
+        }
+
+        BigDecimal discount = newSubtotal.multiply(BigDecimal.valueOf(invoice.getDiscountPercentage() / 100.0));
+        invoice.setDiscountAmount(discount);
+        invoice.setTotalAmount(newSubtotal.subtract(discount));
     }
 
     @Transactional

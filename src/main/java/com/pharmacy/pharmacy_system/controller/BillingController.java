@@ -67,11 +67,21 @@ public class BillingController {
         }
     }
 
-    /** POST /api/billing/invoices/{invoiceNumber}/return — process a refund/return */
+    /** POST /api/billing/invoices/{invoiceNumber}/return — process a refund/return (FULL) */
     @PostMapping("/invoices/{invoiceNumber}/return")
     public ResponseEntity<Invoice> returnInvoice(@PathVariable String invoiceNumber) {
         try {
             return ResponseEntity.ok(billingService.returnInvoice(invoiceNumber));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    /** POST /api/billing/invoices/partial-return — process a partial refund/return */
+    @PostMapping("/invoices/partial-return")
+    public ResponseEntity<Invoice> partialReturn(@RequestBody com.pharmacy.pharmacy_system.dto.PartialReturnRequestDTO request) {
+        try {
+            return ResponseEntity.ok(billingService.processPartialReturn(request));
         } catch (RuntimeException ex) {
             return ResponseEntity.badRequest().body(null);
         }

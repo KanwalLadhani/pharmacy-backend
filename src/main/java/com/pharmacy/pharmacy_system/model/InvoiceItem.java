@@ -38,6 +38,9 @@ public class InvoiceItem implements Serializable {
     @Column(nullable = false)
     private BigDecimal price;
 
+    @Column(name = "returned_quantity", nullable = false)
+    private Integer returnedQuantity = 0;
+
     public InvoiceItem() {}
 
     public InvoiceItem(Medicine medicine, Integer quantity, BigDecimal price) {
@@ -62,4 +65,7 @@ public class InvoiceItem implements Serializable {
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
+
+    public Integer getReturnedQuantity() { return returnedQuantity; }
+    public void setReturnedQuantity(Integer returnedQuantity) { this.returnedQuantity = returnedQuantity; }
 }
