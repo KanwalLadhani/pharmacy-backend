@@ -1,5 +1,7 @@
 package com.pharmacy.pharmacy_system.model;
 
+import java.io.Serializable;
+
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 
@@ -9,7 +11,10 @@ import java.math.BigDecimal;
  */
 @Entity
 @Table(name = "inventory")
-public class Medicine {
+public class Medicine implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
 
     @Id
     @Column(name = "item_id")

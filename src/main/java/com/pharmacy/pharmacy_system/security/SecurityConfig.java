@@ -19,20 +19,26 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.pharmacy.pharmacy_system.repository.UserRepository;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+
 import java.util.List;
+
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
-    private final com.pharmacy.pharmacy_system.repository.UserRepository userRepository;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final CustomAuthEntryPoint authEntryPoint;
 
+
     public SecurityConfig(JwtAuthFilter jwtAuthFilter,
-                          com.pharmacy.pharmacy_system.repository.UserRepository userRepository,
+                          UserRepository userRepository,
                           PasswordEncoder passwordEncoder,
                           CustomAccessDeniedHandler accessDeniedHandler,
                           CustomAuthEntryPoint authEntryPoint) {
@@ -47,9 +53,9 @@ public class SecurityConfig {
     public UserDetailsService userDetailsService() {
         return new UserDetailsService() {
             @Override
-            public org.springframework.security.core.userdetails.UserDetails loadUserByUsername(String username) {
+            public UserDetails loadUserByUsername(String username) {
                 return userRepository.findByUsername(username)
-                        .orElseThrow(() -> new org.springframework.security.core.userdetails.UsernameNotFoundException(
+                        .orElseThrow(() -> new UsernameNotFoundException(
                                 "User not found with username: " + username
                         ));
             }
@@ -92,7 +98,8 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService());
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService());
         provider.setPasswordEncoder(passwordEncoder);
         return provider;
     }

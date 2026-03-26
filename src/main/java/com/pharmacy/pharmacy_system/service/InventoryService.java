@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.List;
 
@@ -91,7 +93,7 @@ public class InventoryService {
         return alternates;
     }
 
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public void adjustInventoryValues() {
         List<Medicine> all = medicineRepository.findAll();
         for (Medicine m : all) {

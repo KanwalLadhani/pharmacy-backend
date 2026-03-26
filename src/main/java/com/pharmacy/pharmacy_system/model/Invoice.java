@@ -1,5 +1,7 @@
 package com.pharmacy.pharmacy_system.model;
 
+import java.io.Serializable;
+
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -13,7 +15,10 @@ import java.util.List;
  */
 @Entity
 @Table(name = "invoices")
-public class Invoice {
+public class Invoice implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

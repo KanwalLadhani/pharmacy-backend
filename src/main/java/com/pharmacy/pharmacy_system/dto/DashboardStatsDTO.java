@@ -1,5 +1,7 @@
 package com.pharmacy.pharmacy_system.dto;
 
+import java.io.Serializable;
+
 import com.pharmacy.pharmacy_system.model.Medicine;
 
 import java.math.BigDecimal;
@@ -8,7 +10,10 @@ import java.util.List;
 /**
  * DTO returned by the dashboard endpoint containing aggregated stats.
  */
-public class DashboardStatsDTO {
+public class DashboardStatsDTO implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
 
     private Long totalMedicines;
     private BigDecimal totalSales;

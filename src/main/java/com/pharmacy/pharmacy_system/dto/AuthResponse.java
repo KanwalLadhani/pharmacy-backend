@@ -1,6 +1,11 @@
 package com.pharmacy.pharmacy_system.dto;
 
-public class AuthResponse {
+import java.io.Serializable;
+
+public class AuthResponse implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
 
     private String token;
     private String username;
