@@ -38,8 +38,9 @@ public class InvoiceItem implements Serializable {
     @Column(nullable = false)
     private BigDecimal price;
 
-    @Column(name = "returned_quantity")
+    @Column(name = "returned_quantity", columnDefinition = "integer default 0")
     private Integer returnedQuantity = 0;
+
 
     public InvoiceItem() {}
 
