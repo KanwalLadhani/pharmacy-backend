@@ -29,7 +29,7 @@ public interface MedicineRepository extends JpaRepository<Medicine, Long> {
     Long countTotalMedicines();
 
     /** Returns total inventory value = SUM(quantity * price) across all medicines. */
-    @Query("SELECT COALESCE(SUM(m.quantity * m.price), 0) FROM Medicine m WHERE m.quantity IS NOT NULL AND m.price IS NOT NULL")
+    @Query("SELECT COALESCE(SUM(m.quantity * m.price), 0) FROM Medicine m WHERE m.quantity > 0 AND m.price IS NOT NULL")
     BigDecimal calculateTotalInventoryValue();
 
     /** Find medicines with exactly the same salt formula and in stock. */
