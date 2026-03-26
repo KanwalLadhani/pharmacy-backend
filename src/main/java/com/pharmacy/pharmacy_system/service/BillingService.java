@@ -83,8 +83,9 @@ public class BillingService {
         return invoiceRepository.save(invoice);
     }
 
+    @Transactional(readOnly = true)
     public List<Invoice> getAllInvoices() {
-        return invoiceRepository.findAllByOrderByDateDesc();
+        return invoiceRepository.findAllWithItemsOrderByDateDesc();
     }
 
     public java.util.Optional<Invoice> getInvoiceByNumber(String invoiceNumber) {
@@ -95,6 +96,7 @@ public class BillingService {
         return invoiceRepository.findByDateBetweenOrderByDateDesc(start, end);
     }
 
+    @Transactional(readOnly = true)
     public BigDecimal getTotalSalesBetween(java.time.LocalDateTime start, java.time.LocalDateTime end) {
         List<Invoice> invoices = invoiceRepository.findByDateBetween(start, end);
         BigDecimal total = BigDecimal.ZERO;

@@ -10,14 +10,9 @@ import java.util.List;
 
 @Repository
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
-    List<Invoice> findAllByOrderByDateDesc();
+    @Query("SELECT DISTINCT i FROM Invoice i LEFT JOIN FETCH i.items it LEFT JOIN FETCH it.medicine m ORDER BY i.date DESC")
+    List<Invoice> findAllWithItemsOrderByDateDesc();
 
-    java.util.Optional<Invoice> findByInvoiceNumber(String invoiceNumber);
-
-    @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.isReturned = false")
-    BigDecimal calculateTotalSales();
-
-    /** Returns invoices for a specific period. */
     List<Invoice> findByDateBetween(java.time.LocalDateTime start, java.time.LocalDateTime end);
 
     List<Invoice> findByDateBetweenOrderByDateDesc(java.time.LocalDateTime start, java.time.LocalDateTime end);
