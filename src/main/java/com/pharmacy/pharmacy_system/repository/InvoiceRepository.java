@@ -15,6 +15,9 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     @Query("SELECT DISTINCT i FROM Invoice i LEFT JOIN FETCH i.items it LEFT JOIN FETCH it.medicine m ORDER BY i.date DESC")
     List<Invoice> findAllWithItemsOrderByDateDesc();
 
+    @Query("SELECT i FROM Invoice i LEFT JOIN FETCH i.items it LEFT JOIN FETCH it.medicine m WHERE i.invoiceNumber = :invoiceNumber")
+    Optional<Invoice> findByInvoiceNumberWithItems(String invoiceNumber);
+
     Optional<Invoice> findByInvoiceNumber(String invoiceNumber);
 
     @Query("SELECT COALESCE(SUM(i.totalAmount), 0) FROM Invoice i WHERE i.isReturned = false")

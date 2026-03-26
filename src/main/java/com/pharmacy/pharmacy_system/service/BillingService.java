@@ -88,10 +88,12 @@ public class BillingService {
         return invoiceRepository.findAllWithItemsOrderByDateDesc();
     }
 
+    @Transactional(readOnly = true)
     public java.util.Optional<Invoice> getInvoiceByNumber(String invoiceNumber) {
-        return invoiceRepository.findByInvoiceNumber(invoiceNumber);
+        return invoiceRepository.findByInvoiceNumberWithItems(invoiceNumber);
     }
 
+    @Transactional(readOnly = true)
     public List<Invoice> getInvoicesByDateRange(java.time.LocalDateTime start, java.time.LocalDateTime end) {
         return invoiceRepository.findByDateBetweenOrderByDateDesc(start, end);
     }
