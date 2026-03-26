@@ -71,7 +71,7 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                // Public — login endpoint
+                // Public — login and health endpoints
                 .requestMatchers("/api/auth/**").permitAll()
 
                 // Admin-only: mutating medicine data and clearing sales

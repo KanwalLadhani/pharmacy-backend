@@ -51,4 +51,9 @@ public class AuthController {
                     .body(Map.of("error", "Invalid username or password."));
         }
     }
+
+    @GetMapping("/health")
+    public ResponseEntity<String> health() {
+        return ResponseEntity.ok("Backend is UP and Running!");
+    }
 }
