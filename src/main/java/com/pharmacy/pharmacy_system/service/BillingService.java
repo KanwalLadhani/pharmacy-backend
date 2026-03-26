@@ -7,6 +7,8 @@ import com.pharmacy.pharmacy_system.model.InvoiceItem;
 import com.pharmacy.pharmacy_system.model.Medicine;
 import com.pharmacy.pharmacy_system.repository.InvoiceRepository;
 import com.pharmacy.pharmacy_system.repository.MedicineRepository;
+import com.pharmacy.pharmacy_system.repository.InvoiceItemRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,12 +24,15 @@ public class BillingService {
 
     private final InvoiceRepository invoiceRepository;
     private final MedicineRepository medicineRepository;
+    private final InvoiceItemRepository invoiceItemRepository;
 
     @Autowired
     public BillingService(InvoiceRepository invoiceRepository,
-                          MedicineRepository medicineRepository) {
+                          MedicineRepository medicineRepository,
+                          InvoiceItemRepository invoiceItemRepository) {
         this.invoiceRepository = invoiceRepository;
         this.medicineRepository = medicineRepository;
+        this.invoiceItemRepository = invoiceItemRepository;
     }
 
     /**
@@ -189,6 +194,7 @@ public class BillingService {
 
     @Transactional
     public void clearAllSalesData() {
-        invoiceRepository.deleteAll();
+        invoiceItemRepository.deleteAllInBatch();
+        invoiceRepository.deleteAllInBatch();
     }
 }
