@@ -37,9 +37,12 @@ jobs:
               { "name": "FRONTEND_URL", "value": "${{ secrets.FRONTEND_URL }}", "slotSetting": false }
             ]
 
+      - name: Rename JAR for Azure auto-detect
+        run: mv backend/target/*.jar backend/target/app.jar
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'medistore-api'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: backend/target/*.jar
+          package: backend/target/app.jar
