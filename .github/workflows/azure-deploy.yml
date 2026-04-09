@@ -21,7 +21,7 @@ jobs:
           cache: maven
 
       - name: Build with Maven
-        run: mvn -f backend/pom.xml clean package -DskipTests
+        run: mvn -f pom.xml clean package -DskipTests
 
       - name: Configure Azure App Service Settings
         uses: azure/appservice-settings@v1
@@ -38,11 +38,11 @@ jobs:
             ]
 
       - name: Rename JAR for Azure auto-detect
-        run: mv backend/target/*.jar backend/target/app.jar
+        run: mv target/*.jar target/app.jar
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'medistore-api'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: backend/target/app.jar
+          package: target/app.jar
