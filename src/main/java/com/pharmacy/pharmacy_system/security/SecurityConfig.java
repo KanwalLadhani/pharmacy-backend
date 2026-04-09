@@ -1,5 +1,6 @@
 package com.pharmacy.pharmacy_system.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -35,6 +36,9 @@ public class SecurityConfig {
     private final PasswordEncoder passwordEncoder;
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final CustomAuthEntryPoint authEntryPoint;
+    
+    @Value("${FRONTEND_URL:http://localhost:5173}")
+    private String frontendUrl;
 
 
     public SecurityConfig(JwtAuthFilter jwtAuthFilter,
@@ -115,7 +119,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(List.of(
                 "http://localhost:5173", 
                 "http://localhost:3000",
-                "https://pharmacy-frontend-xwer.onrender.com"
+                frontendUrl
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
