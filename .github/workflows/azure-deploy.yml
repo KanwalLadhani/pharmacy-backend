@@ -23,20 +23,6 @@ jobs:
       - name: Build with Maven
         run: mvn -f pom.xml clean package -DskipTests
 
-      - name: Configure Azure App Service Settings
-        uses: azure/appservice-settings@v1
-        with:
-          app-name: 'medistore-api'
-          mask-inputs: false
-          app-settings-json: |
-            [
-              { "name": "SPRING_DATASOURCE_URL", "value": "${{ secrets.SPRING_DATASOURCE_URL }}", "slotSetting": false },
-              { "name": "SPRING_DATASOURCE_USERNAME", "value": "${{ secrets.SPRING_DATASOURCE_USERNAME }}", "slotSetting": false },
-              { "name": "SPRING_DATASOURCE_PASSWORD", "value": "${{ secrets.SPRING_DATASOURCE_PASSWORD }}", "slotSetting": false },
-              { "name": "JWT_SECRET", "value": "${{ secrets.JWT_SECRET }}", "slotSetting": false },
-              { "name": "FRONTEND_URL", "value": "${{ secrets.FRONTEND_URL }}", "slotSetting": false }
-            ]
-
       - name: Rename JAR for Azure auto-detect
         run: mv target/*.jar target/app.jar
 
