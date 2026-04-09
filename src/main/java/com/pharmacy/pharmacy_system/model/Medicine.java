@@ -36,6 +36,9 @@ public class Medicine implements Serializable {
     @Column(name = "retail_value")
     private BigDecimal price;
 
+    @Column(name = "purchase_price", precision = 19, scale = 3)
+    private BigDecimal purchasePrice;
+
     @Column(name = "available_qty")
     private Integer quantity;
 
@@ -83,6 +86,9 @@ public class Medicine implements Serializable {
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
+
+    public BigDecimal getPurchasePrice() { return purchasePrice; }
+    public void setPurchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; }
 
     public Integer getQuantity() { return quantity; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }

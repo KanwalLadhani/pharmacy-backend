@@ -35,8 +35,14 @@ public class InvoiceItem implements Serializable {
     private Integer quantity;
 
     /** Unit price at the time of sale (snapshot). */
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 19, scale = 3)
     private BigDecimal price;
+
+    @Column(name = "purchase_price", precision = 19, scale = 3)
+    private BigDecimal purchasePrice;
+
+    @Column(name = "item_discount", precision = 19, scale = 3)
+    private BigDecimal itemDiscount = BigDecimal.ZERO;
 
     @Column(name = "returned_quantity", columnDefinition = "integer default 0")
     private Integer returnedQuantity = 0;
@@ -44,10 +50,12 @@ public class InvoiceItem implements Serializable {
 
     public InvoiceItem() {}
 
-    public InvoiceItem(Medicine medicine, Integer quantity, BigDecimal price) {
+    public InvoiceItem(Medicine medicine, Integer quantity, BigDecimal price, BigDecimal purchasePrice, BigDecimal itemDiscount) {
         this.medicine = medicine;
         this.quantity = quantity;
         this.price = price;
+        this.purchasePrice = purchasePrice;
+        this.itemDiscount = itemDiscount != null ? itemDiscount : BigDecimal.ZERO;
     }
 
     // ---------- Getters & Setters ----------
@@ -66,6 +74,12 @@ public class InvoiceItem implements Serializable {
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
+
+    public BigDecimal getPurchasePrice() { return purchasePrice; }
+    public void setPurchasePrice(BigDecimal purchasePrice) { this.purchasePrice = purchasePrice; }
+
+    public BigDecimal getItemDiscount() { return itemDiscount; }
+    public void setItemDiscount(BigDecimal itemDiscount) { this.itemDiscount = itemDiscount; }
 
     public Integer getReturnedQuantity() { return returnedQuantity; }
     public void setReturnedQuantity(Integer returnedQuantity) { this.returnedQuantity = returnedQuantity; }

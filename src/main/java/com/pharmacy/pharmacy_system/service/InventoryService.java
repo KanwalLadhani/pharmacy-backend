@@ -93,6 +93,10 @@ public class InventoryService {
         return alternates;
     }
 
+    public List<Medicine> getLowStockMedicines(int threshold) {
+        return medicineRepository.findLowStockMedicines(threshold + 1); // Repository uses '< ?1', so +1 for '<= threshold'
+    }
+
     @Transactional
     public void adjustInventoryValues() {
         List<Medicine> all = medicineRepository.findAll();

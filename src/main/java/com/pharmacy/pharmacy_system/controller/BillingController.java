@@ -1,6 +1,7 @@
 package com.pharmacy.pharmacy_system.controller;
 
 import com.pharmacy.pharmacy_system.dto.InvoiceRequestDTO;
+import com.pharmacy.pharmacy_system.dto.ProfitReportDTO;
 import com.pharmacy.pharmacy_system.model.Invoice;
 import com.pharmacy.pharmacy_system.service.BillingService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -33,10 +35,12 @@ public class BillingController {
         return ResponseEntity.ok(billingService.createInvoice(requestDTO));
     }
 
-    /** GET /api/billing/invoices — list all invoices */
-    @GetMapping("/invoices")
-    public List<Invoice> getAllInvoices() {
-        return billingService.getAllInvoices();
+    /** GET /api/billing/history — returns all invoices with pagination. */
+    @GetMapping("/history")
+    public ResponseEntity<org.springframework.data.domain.Page<Invoice>> getInvoices(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
+        return ResponseEntity.ok(billingService.getAllInvoices(org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("date").descending())));
     }
 
     /** GET /api/billing/invoices/{invoiceNumber} — fetch invoice by number */
@@ -45,6 +49,13 @@ public class BillingController {
         return billingService.getInvoiceByNumber(invoiceNumber)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /** GET /api/billing/profit-report?date=YYYY-MM-DD — get daily profit report */
+    @GetMapping("/profit-report")
+    public ResponseEntity<ProfitReportDTO> getProfitReport(@RequestParam(required = false) String date) {
+        LocalDate reportDate = (date != null) ? LocalDate.parse(date) : LocalDate.now();
+        return ResponseEntity.ok(billingService.getDailyProfitReport(reportDate));
     }
 
     @GetMapping("/sales/summary")

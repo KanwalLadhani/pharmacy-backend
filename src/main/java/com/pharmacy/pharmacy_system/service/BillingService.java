@@ -8,6 +8,7 @@ import com.pharmacy.pharmacy_system.model.Medicine;
 import com.pharmacy.pharmacy_system.repository.InvoiceRepository;
 import com.pharmacy.pharmacy_system.repository.MedicineRepository;
 import com.pharmacy.pharmacy_system.repository.InvoiceItemRepository;
+import com.pharmacy.pharmacy_system.dto.ProfitReportDTO;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -40,52 +41,103 @@ public class BillingService {
      */
     @Transactional
     public Invoice createInvoice(InvoiceRequestDTO invoiceDTO) {
+        if (invoiceDTO.getItems() == null || invoiceDTO.getItems().isEmpty()) {
+            throw new RuntimeException("Cannot create an empty invoice.");
+        }
+
         Invoice invoice = new Invoice();
-        String invNum = "INV-" + java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd").format(java.time.LocalDate.now()) 
-                        + "-" + java.util.UUID.randomUUID().toString().substring(0, 5).toUpperCase();
-        invoice.setInvoiceNumber(invNum);
+        String dateStr = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd").format(java.time.LocalDate.now());
+        String randomSuffix = java.util.UUID.randomUUID().toString().substring(0, 5).toUpperCase();
+        invoice.setInvoiceNumber("INV-" + dateStr + "-" + randomSuffix);
         
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        BigDecimal subtotal = BigDecimal.ZERO;
+        BigDecimal totalDiscountAmount = BigDecimal.ZERO;
 
         for (InvoiceItemDTO itemDTO : invoiceDTO.getItems()) {
+            if (itemDTO.getMedicineId() == null) throw new RuntimeException("Medicine ID is missing for an item.");
+            
             Medicine medicine = medicineRepository.findById(itemDTO.getMedicineId())
-                    .orElseThrow(() -> new RuntimeException("Medicine not found ID: " + itemDTO.getMedicineId()));
+                    .orElseThrow(() -> new RuntimeException("Medicine not found with ID: " + itemDTO.getMedicineId()));
 
-            int requestedQty = itemDTO.getQuantity();
+            int requestedQty = itemDTO.getQuantity() != null ? itemDTO.getQuantity() : 0;
+            if (requestedQty <= 0) throw new RuntimeException("Quantity must be greater than zero for " + medicine.getBrandName());
+
             int currentStock = medicine.getQuantity() != null ? medicine.getQuantity() : 0;
-
-            if (currentStock < requestedQty || currentStock <= 0) {
-                throw new RuntimeException(
-                        "Insufficient stock for '" + medicine.getBrandName()
-                        + "'. Available: " + (currentStock > 0 ? currentStock : 0));
+            if (currentStock < requestedQty) {
+                throw new RuntimeException("Insufficient stock for '" + medicine.getBrandName() + "'. Available: " + currentStock);
             }
 
-            // Deduct stock safely
-            medicine.setQuantity(Math.max(0, currentStock - requestedQty));
+            // Update medicine record
+            medicine.setQuantity(currentStock - requestedQty);
             medicineRepository.save(medicine);
 
             BigDecimal unitPrice = medicine.getPrice() != null ? medicine.getPrice() : BigDecimal.ZERO;
-            BigDecimal itemTotal = unitPrice.multiply(BigDecimal.valueOf(requestedQty));
-            totalAmount = totalAmount.add(itemTotal);
+            BigDecimal purchasePrice = medicine.getPurchasePrice() != null ? medicine.getPurchasePrice() : BigDecimal.ZERO;
+            BigDecimal itemDiscount = itemDTO.getDiscount() != null ? itemDTO.getDiscount() : BigDecimal.ZERO;
+            
+            BigDecimal itemSubtotal = unitPrice.multiply(BigDecimal.valueOf(requestedQty));
+            subtotal = subtotal.add(itemSubtotal);
+            totalDiscountAmount = totalDiscountAmount.add(itemDiscount);
 
             // Add item to invoice
-            invoice.addItem(new InvoiceItem(medicine, requestedQty, unitPrice));
+            InvoiceItem newItem = new InvoiceItem(medicine, requestedQty, unitPrice, purchasePrice, itemDiscount);
+            invoice.addItem(newItem);
         }
 
-        BigDecimal subtotal = totalAmount;
-        BigDecimal discount = subtotal.multiply(BigDecimal.valueOf(0.1)); // 10%
-        BigDecimal finalTotal = subtotal.subtract(discount);
-
-        invoice.setTotalAmount(finalTotal);
-        invoice.setDiscountAmount(discount);
-        invoice.setDiscountPercentage(10.0);
+        invoice.setDiscountPercentage(0.0); // Deprecating global percentage
+        invoice.setDiscountAmount(totalDiscountAmount);
+        
+        // Granular Requirement: Grand Total = Σ(Price * Qty - Individual Item Discount)
+        invoice.setTotalAmount(subtotal.subtract(totalDiscountAmount));
+        
+        calculateProfit(invoice);
         
         return invoiceRepository.save(invoice);
     }
 
-    @Transactional(readOnly = true)
-    public List<Invoice> getAllInvoices() {
-        return invoiceRepository.findAllWithItemsOrderByDateDesc();
+    private void calculateProfit(Invoice invoice) {
+        BigDecimal totalCost = BigDecimal.ZERO;
+        for (InvoiceItem item : invoice.getItems()) {
+            int effectiveQty = item.getQuantity() - (item.getReturnedQuantity() != null ? item.getReturnedQuantity() : 0);
+            if (effectiveQty > 0 && item.getPurchasePrice() != null) {
+                totalCost = totalCost.add(item.getPurchasePrice().multiply(BigDecimal.valueOf(effectiveQty)));
+            }
+        }
+        invoice.setTotalProfit(invoice.getTotalAmount().subtract(totalCost));
+    }
+
+    public ProfitReportDTO getDailyProfitReport(java.time.LocalDate date) {
+        java.time.LocalDateTime startOfDay = date.atStartOfDay();
+        java.time.LocalDateTime endOfDay = date.atTime(23, 59, 59);
+        
+        List<Invoice> dailyInvoices = invoiceRepository.findByDateBetweenOrderByDateDesc(startOfDay, endOfDay);
+        
+        BigDecimal totalRevenue = BigDecimal.ZERO;
+        BigDecimal totalCost = BigDecimal.ZERO;
+        BigDecimal totalDiscounts = BigDecimal.ZERO;
+
+        for (Invoice invoice : dailyInvoices) {
+            if (invoice.isReturned()) continue;
+            
+            totalRevenue = totalRevenue.add(invoice.getTotalAmount());
+            totalDiscounts = totalDiscounts.add(invoice.getDiscountAmount());
+            
+            for (InvoiceItem item : invoice.getItems()) {
+                int effectiveQty = item.getQuantity() - (item.getReturnedQuantity() != null ? item.getReturnedQuantity() : 0);
+                if (effectiveQty > 0 && item.getPurchasePrice() != null) {
+                    totalCost = totalCost.add(item.getPurchasePrice().multiply(BigDecimal.valueOf(effectiveQty)));
+                }
+            }
+        }
+        
+        BigDecimal netProfit = totalRevenue.subtract(totalCost);
+        
+        return new ProfitReportDTO(date, totalRevenue, totalCost, totalDiscounts, netProfit);
+    }
+
+    /** Returns all invoices with pagination. */
+    public org.springframework.data.domain.Page<Invoice> getAllInvoices(org.springframework.data.domain.Pageable pageable) {
+        return invoiceRepository.findAllWithItems(pageable);
     }
 
     @Transactional(readOnly = true)
@@ -93,9 +145,9 @@ public class BillingService {
         return invoiceRepository.findByInvoiceNumberWithItems(invoiceNumber);
     }
 
-    @Transactional(readOnly = true)
-    public List<Invoice> getInvoicesByDateRange(java.time.LocalDateTime start, java.time.LocalDateTime end) {
-        return invoiceRepository.findByDateBetweenOrderByDateDesc(start, end);
+    /** Returns invoices for a specific period with pagination. */
+    public org.springframework.data.domain.Page<Invoice> getInvoicesByPeriod(java.time.LocalDateTime start, java.time.LocalDateTime end, org.springframework.data.domain.Pageable pageable) {
+        return invoiceRepository.findByDateBetweenOrderByDateDesc(start, end, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -183,17 +235,33 @@ public class BillingService {
 
     private void recalculateInvoiceTotals(Invoice invoice) {
         BigDecimal newSubtotal = BigDecimal.ZERO;
+        BigDecimal totalItemDiscounts = BigDecimal.ZERO;
+        
         for (InvoiceItem item : invoice.getItems()) {
-            int effectiveQty = item.getQuantity() - (item.getReturnedQuantity() != null ? item.getReturnedQuantity() : 0);
+            int originalQty = item.getQuantity();
+            int returnedQty = item.getReturnedQuantity() != null ? item.getReturnedQuantity() : 0;
+            int effectiveQty = originalQty - returnedQty;
+            
             if (effectiveQty > 0) {
-                BigDecimal itemTotal = item.getPrice().multiply(BigDecimal.valueOf(effectiveQty));
-                newSubtotal = newSubtotal.add(itemTotal);
+                // Gross amount for remaining quantity
+                BigDecimal itemSub = item.getPrice().multiply(BigDecimal.valueOf(effectiveQty));
+                newSubtotal = newSubtotal.add(itemSub);
+                
+                // Proportional discount: (TotalDiscount * EffectiveQty) / OriginalQty
+                if (item.getItemDiscount() != null && item.getItemDiscount().compareTo(BigDecimal.ZERO) > 0) {
+                    BigDecimal proportionalDiscount = item.getItemDiscount()
+                            .multiply(BigDecimal.valueOf(effectiveQty))
+                            .divide(BigDecimal.valueOf(originalQty), 3, java.math.RoundingMode.HALF_UP);
+                    totalItemDiscounts = totalItemDiscounts.add(proportionalDiscount);
+                }
             }
         }
 
-        BigDecimal discount = newSubtotal.multiply(BigDecimal.valueOf(invoice.getDiscountPercentage() / 100.0));
-        invoice.setDiscountAmount(discount);
-        invoice.setTotalAmount(newSubtotal.subtract(discount));
+        invoice.setDiscountPercentage(0.0);
+        invoice.setDiscountAmount(totalItemDiscounts);
+        invoice.setTotalAmount(newSubtotal.subtract(totalItemDiscounts));
+        
+        calculateProfit(invoice);
     }
 
     @Transactional

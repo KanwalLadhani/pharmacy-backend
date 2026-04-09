@@ -75,6 +75,12 @@ public class MedicineController {
         return inventoryService.getAlternates(brandId);
     }
 
+    /** GET /api/medicines/low-stock — get all medicines with stock <= 20 */
+    @GetMapping("/low-stock")
+    public List<Medicine> getLowStock() {
+        return inventoryService.getLowStockMedicines(20);
+    }
+
     /** GET /api/medicines/adjust-inventory — temporary endpoint to reduce valuation */
     @GetMapping("/adjust-inventory")
     public ResponseEntity<String> adjustInventory() {

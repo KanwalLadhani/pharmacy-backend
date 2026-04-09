@@ -14,7 +14,9 @@ import java.util.List;
  * Maps to the 'invoices' table in the database.
  */
 @Entity
-@Table(name = "invoices")
+@Table(name = "invoices", indexes = {
+    @Index(name = "idx_invoice_date", columnList = "date")
+})
 public class Invoice implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -46,6 +48,9 @@ public class Invoice implements Serializable {
 
     @Column(name = "discount_percentage")
     private Double discountPercentage = 10.0;
+
+    @Column(name = "total_profit")
+    private BigDecimal totalProfit = BigDecimal.ZERO;
 
     public Invoice() {
         this.date = LocalDateTime.now();
@@ -82,4 +87,7 @@ public class Invoice implements Serializable {
 
     public Double getDiscountPercentage() { return discountPercentage; }
     public void setDiscountPercentage(Double discountPercentage) { this.discountPercentage = discountPercentage; }
+
+    public BigDecimal getTotalProfit() { return totalProfit; }
+    public void setTotalProfit(BigDecimal totalProfit) { this.totalProfit = totalProfit; }
 }
