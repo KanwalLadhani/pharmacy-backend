@@ -23,9 +23,23 @@ jobs:
       - name: Build with Maven
         run: mvn -f backend/pom.xml clean package -DskipTests
 
+      - name: Configure Azure App Service Settings
+        uses: azure/appservice-settings@v1
+        with:
+          app-name: 'medistore-api'
+          mask-inputs: false
+          app-settings-json: |
+            [
+              { "name": "SPRING_DATASOURCE_URL", "value": "${{ secrets.SPRING_DATASOURCE_URL }}", "slotSetting": false },
+              { "name": "SPRING_DATASOURCE_USERNAME", "value": "${{ secrets.SPRING_DATASOURCE_USERNAME }}", "slotSetting": false },
+              { "name": "SPRING_DATASOURCE_PASSWORD", "value": "${{ secrets.SPRING_DATASOURCE_PASSWORD }}", "slotSetting": false },
+              { "name": "JWT_SECRET", "value": "${{ secrets.JWT_SECRET }}", "slotSetting": false },
+              { "name": "FRONTEND_URL", "value": "${{ secrets.FRONTEND_URL }}", "slotSetting": false }
+            ]
+
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v2
         with:
-          app-name: 'medistore-api' # Name of your Azure Web App
+          app-name: 'medistore-api'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: backend/target/*.jar
