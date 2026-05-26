@@ -17,17 +17,15 @@ public class DataSeeder {
             UserRepository userRepository,
             PasswordEncoder passwordEncoder) {
         return args -> {
-            // --- Force-Reset Admin Password on Every Startup ---
-            User admin = userRepository.findByUsername("admin")
-                    .orElseGet(() -> {
-                        User newAdmin = new User();
-                        newAdmin.setUsername("admin");
-                        newAdmin.setRole(Role.ROLE_ADMIN);
-                        return newAdmin;
-                    });
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            userRepository.save(admin);
-            System.out.println("[DataSeeder] 🔐 Admin password has been reset to: admin / admin123");
+            // --- Seed Initial Admin (If missing) ---
+            if (userRepository.findByUsername("admin").isEmpty()) {
+                User admin = new User();
+                admin.setUsername("admin");
+                admin.setPassword(passwordEncoder.encode("admin123"));
+                admin.setRole(Role.ROLE_ADMIN);
+                userRepository.save(admin);
+                System.out.println("[DataSeeder] 🔐 Created initial admin account: admin / admin123");
+            }
             // Seed logic for other roles or data can be added here if missing
         };
     }
